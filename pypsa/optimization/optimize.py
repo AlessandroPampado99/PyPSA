@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import logging
 import warnings
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
@@ -22,6 +21,7 @@ from pypsa.common import UnexpectedError, as_index
 from pypsa.components.array import _from_xarray
 from pypsa.components.common import as_components
 from pypsa.consistency import check_big_m_exceeded, check_no_modular_committables
+from pypsa.constants import PYPSA_DATA_DIR
 from pypsa.descriptors import nominal_attrs
 from pypsa.guards import _assert_data_integrity
 from pypsa.optimization.abstract import OptimizationAbstractMixin
@@ -75,9 +75,8 @@ if TYPE_CHECKING:
     from pypsa.components import Links, Processes
 logger = logging.getLogger(__name__)
 
-
 lookup = pd.read_csv(
-    Path(__file__).parent / ".." / "data" / "variables.csv",
+    PYPSA_DATA_DIR / "variables.csv",
     index_col=["component", "variable"],
 )
 
@@ -434,7 +433,7 @@ def define_objective(
 
 
 class OptimizationAccessor(OptimizationAbstractMixin):
-    """Optimization accessor for building and solving models using linopy.
+    """Optimization accessor for building and solving network models.
 
     <!-- md:guide network-optimization.md -->
     """
@@ -463,7 +462,7 @@ class OptimizationAccessor(OptimizationAbstractMixin):
         meshed_thresholds: Sequence[int] | None = None,
         **kwargs: Any,
     ) -> tuple[str, str]:
-        """Optimize the pypsa network using linopy.
+        """Optimize the pypsa network.
 
         Parameters
         ----------
@@ -507,6 +506,8 @@ class OptimizationAccessor(OptimizationAbstractMixin):
             information.
         solver_options : dict, optional
             Keyword arguments used by the solver. Can also be passed via `**kwargs`.
+            With ``solver_name="smspp"``, these options are forwarded to
+            ``pypsa2smspp.Transformation``.
             Defaults to module wide option (default: {}). See
             `https://go.pypsa.org/options-params` for more information.
         log_to_console : bool, optional
@@ -555,7 +556,7 @@ class OptimizationAccessor(OptimizationAbstractMixin):
         if log_to_console is None:
             log_to_console = options.params.optimize.log_to_console
         if str(solver_name).lower() == "smspp":
-            return self.smspp(solver_options=solver_options)
+            return self.smspp(solver_options=solver_options, **kwargs)
 
         include_objective_constant = _resolve_include_objective_constant(
             include_objective_constant
@@ -598,7 +599,7 @@ class OptimizationAccessor(OptimizationAbstractMixin):
             and compute_infeasibilities
             and "gurobi" in available_solvers
         ):
-            n.model.print_infeasibilities()
+            logger.info(n.model.format_infeasibilities())
 
         return status, condition
 
