@@ -9,7 +9,7 @@ from __future__ import annotations
 import copy
 import logging
 import warnings
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, NoReturn
 from weakref import ref
 
 from deprecation import deprecated
@@ -66,15 +66,7 @@ if TYPE_CHECKING:
 
     from pypsa.components.legacy import Component
 
-from pypsa.optimization.smspp import SMSppAccessor
-
 logger = logging.getLogger(__name__)
-
-
-dir_name = Path(__file__).parent
-
-standard_types_dir_name = "data/standard_types"
-
 
 inf = float("inf")
 
@@ -187,11 +179,6 @@ class Network(
         """
         Network [plotting functionality][pypsa.plot.PlotAccessor] accessor.
         """
-        self.smspp: SMSppAccessor = SMSppAccessor(self)
-        """
-        Network [optimization functionality][pypsa.optimization.SMSppAccessor]
-        """
-
         NetworkComponentsMixin.__init__(self)
 
         if not ignore_standard_types:
@@ -493,6 +480,11 @@ class Network(
 
             return self.slice_network(key)
 
+    def __iter__(self) -> NoReturn:
+        """Raise a clear error, as Network objects are not iterable."""
+        msg = "PyPSA Network objects are not iterable."
+        raise TypeError(msg)
+
     @property
     def stats(self) -> StatisticsAccessor:
         """Network [statistics functionality][pypsa.statistics.StatisticsAccessor] accessor (alias for [pypsa.Network.statistics][])."""
@@ -538,7 +530,6 @@ class Network(
             PlotAccessor,
             AbstractStatisticsAccessor,
             linopy.Model,
-            SMSppAccessor,
         ]
         not_equal = False
         if isinstance(other, self.__class__):
